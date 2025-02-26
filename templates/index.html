@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💱 Convertisseur de Devises</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-exchange-alt"></i> Convertisseur Pro</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#">Accueil</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#convertisseur">Convertisseur</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#taux">Taux de Change</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#graphique">Graphique</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Section Convertisseur -->
+    <div class="container text-center mt-5" id="convertisseur">
+        <h2 class="mb-4">💱 Convertisseur de Devises</h2>
+        <div class="card shadow p-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="amount" class="form-label">Montant :</label>
+                    <input type="number" id="amount" class="form-control" placeholder="Entrez un montant">
+                </div>
+                <div class="col-md-3">
+                    <label for="from" class="form-label">De :</label>
+                    <select id="from" class="form-select">
+                        <option value="EUR">🇪🇺 EUR (€)</option>
+                        <option value="USD">🇺🇸 USD ($)</option>
+                        <option value="GBP">🇬🇧 GBP (£)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="to" class="form-label">À :</label>
+                    <select id="to" class="form-select">
+                        <option value="USD">🇺🇸 USD ($)</option>
+                        <option value="EUR">🇪🇺 EUR (€)</option>
+                        <option value="GBP">🇬🇧 GBP (£)</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button class="btn btn-primary mt-4" onclick="convertCurrency()">Convertir</button>
+                </div>
+            </div>
+        </div>
+        <div id="result" class="mt-4"></div>
+    </div>
+
+    <!-- Section Taux en Direct -->
+    <!-- Section Taux en Direct -->
+<div class="container mt-5" id="taux">
+    <h3>📈 Taux de Change Actuels</h3>
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>Devise</th>
+                <th>Taux (par rapport à l'EUR)</th>
+            </tr>
+        </thead>
+        <tbody id="ratesTable"></tbody>
+    </table>
+</div>
+
+<!-- Section Graphique -->
+<div class="container mt-5" id="graphique">
+    <h3>📊 Évolution des Taux</h3>
+    <canvas id="exchangeChart"></canvas>
+</div>
+
+<script>
+    function loadRates() {
+        fetch('/latest-rates')
+        .then(response => response.json())
+        .then(data => {
+            let table = document.getElementById("ratesTable");
+            table.innerHTML = "";
+            let currencies = ["USD", "GBP", "JPY", "CAD"];
+            currencies.forEach(currency => {
+                let rate = data.rates[currency] || "N/A";
+                table.innerHTML += `<tr><td>${currency}</td><td>${rate}</td></tr>`;
+            });
+        });
+    }
+
+    function loadChart() {
+        fetch('/historical-rates')
+        .then(response => response.json())
+        .then(data => {
+            let ctx = document.getElementById('exchangeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [
+                        {
+                            label: "USD",
+                            data: data.USD,
+                            borderColor: 'blue',
+                            fill: false
+                        },
+                        {
+                            label: "GBP",
+                            data: data.GBP,
+                            borderColor: 'green',
+                            fill: false
+                        },
+                        {
+                            label: "JPY",
+                            data: data.JPY,
+                            borderColor: 'red',
+                            fill: false
+                        }
+                    ]
+                }
+            });
+        });
+    }
+
+    window.onload = function () {
+        loadRates();
+        loadChart();
+    };
+</script>
+
+
+
+    <!-- Section Contact -->
+    <div class="container mt-5 text-center" id="contact">
+        <h3>📞 Contactez-nous</h3>
+        <p>Email : support@convertisseur.com</p>
+        <p>Téléphone : +33 1 23 45 67 89</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+    <script>
+        function convertCurrency() {
+            let amount = document.getElementById("amount").value;
+            let from = document.getElementById("from").value;
+            let to = document.getElementById("to").value;
+
+            fetch(`/convert?amount=${amount}&from=${from}&to=${to}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("result").innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                } else {
+                    document.getElementById("result").innerHTML = `
+                        <div class="alert alert-success">
+                            <h4>💰 ${data.amount} ${data.from} = <strong>${data.converted} ${data.to}</strong></h4>
+                            <p><i class="fas fa-chart-line"></i> Taux : 1 ${data.from} = ${data.rate} ${data.to}</p>
+                        </div>`;
+                }
+            });
+        }
+
+        function loadRates() {
+            fetch('/latest-rates')
+            .then(response => response.json())
+            .then(data => {
+                let table = document.getElementById("ratesTable");
+                table.innerHTML = "";
+                for (const [currency, rate] of Object.entries(data.rates)) {
+                    table.innerHTML += `<tr><td>${currency}</td><td>${rate}</td></tr>`;
+                }
+            });
+        }
+
+        function loadChart() {
+            let ctx = document.getElementById('exchangeChart').getContext('2d');
+            let exchangeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+                    datasets: [{
+                        label: "EUR/USD",
+                        data: [1.10, 1.12, 1.11, 1.13, 1.14],
+                        borderColor: 'blue',
+                        fill: false
+                    }]
+                }
+            });
+        }
+
+        window.onload = function () {
+            loadRates();
+            loadChart();
+        };
+    </script>
+</body>
+</html>
